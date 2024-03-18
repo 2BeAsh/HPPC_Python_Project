@@ -6,58 +6,17 @@ sys.path.append("/home/jovyan/erda_mount/__dag_config__/python3")
 from mpi4py import MPI
 import numpy as np
 import time
-
-data_path = "./data/"
+from overall import Data, task_function
 
 n_cuts = 3
 n_settings = n_cuts ** 8
-
-
-class Data:
-    def __init__(self):
-        filename = data_path + 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
-        self.name = ["averageInteractionsPerCrossing", "p_Rhad","p_Rhad1",
-                     "p_TRTTrackOccupancy", "p_topoetcone40", "p_eTileGap3Cluster",
-                     "p_phiModCalo", "p_etaModCalo"]
-
-        self.Nvtxreco = np.loadtxt(filename, delimiter=',',skiprows=1,usecols=2)
-        self.p_nTracks = np.loadtxt(filename, delimiter=',',skiprows=1,usecols=3)
-        data_index = [1, 4, 5, 6, 7, 8, 9, 10, 11]
-        self.data = np.loadtxt(filename,delimiter=',',skiprows=1,usecols=data_index)
-        self.signal = self.data[:,-1] == 2
-        self.data = self.data[:,:-1]
-        self.means_sig = np.mean(self.data[self.signal],axis=0)
-        self.means_bckg = np.mean(self.data[~self.signal],axis=0)
-
-
-        self.flip = np.ones(len(self.means_sig))
-        for i in range(8):
-            if self.means_bckg[i] < self.means_sig[i]:
-                self.flip[i] = -1
-                self.data[:,i] *= -1
-                self.means_sig[i] *= -1
-                self.means_bckg[i] *= -1
-        self.nevents = len(self.data)
-        self.nsig = np.sum(self.signal)
-        self.nbckg = self.nevents - self.nsig
-
-    def get(self):
-        return self.data
-
-
-def task_function(setting, ds):
-    pred = np.ones(ds.nevents, dtype=bool)
-    for i in range(8):
-        pred = pred & (ds.data[:,i] < setting[i]) # what does this inequality mean?
-    accuracy = np.sum(pred == ds.signal) / ds.nevents
-    return accuracy
 
 
 def master(ws,ds):
     print(f'I am the master! I have {ws} workers')
     print(f'Nsig = {ds.nsig}, Nbkg = {ds.nbckg}, Ntot = {ds.nevents}')
 
-    ranges = np.zeros((n_cuts, 8))
+    ranges = np.zeros((n_cuts,8))
     # loop over different event channels and set up cuts
 
     # for i in range(8):
@@ -112,7 +71,7 @@ def master(ws,ds):
         t = comm.recv(source=MPI.ANY_SOURCE,status=state, tag = 11)
         w = state.Get_source()  
         count_ws[w] += 1
-        accuracy[task_ws[w]] = t
+        accuracy[task_ws[w]] = t      
 
         comm.send(0, dest=w, tag=10)
         avail_ws.append(w)

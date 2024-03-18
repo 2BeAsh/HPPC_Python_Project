@@ -6,7 +6,7 @@ sys.path.append("/home/jovyan/erda_mount/__dag_config__/python3")
 from mpi4py import MPI
 import numpy as np
 import time
-from overall import Data, task_function
+from overall import Data, task_function, set_gen
 
 n_cuts = 3
 n_settings = n_cuts ** 8
@@ -16,27 +16,7 @@ def master(ws,ds):
     print(f'I am the master! I have {ws} workers')
     print(f'Nsig = {ds.nsig}, Nbkg = {ds.nbckg}, Ntot = {ds.nevents}')
 
-    ranges = np.zeros((n_cuts,8))
-    # loop over different event channels and set up cuts
-
-    # for i in range(8):
-    for j in range(n_cuts):
-        ranges[j,:] = ds.means_sig[:] + j * (ds.means_bckg[:] - ds.means_sig[:]) / n_cuts
-            
-    # generate list of all permutation of the cuts for each channel
-    settings = np.zeros((n_settings,8))
-
-    for k in range(n_settings):
-        div = 1
-        set = np.zeros(8)
-
-        for i in range(8):
-            idx = (k // div) % n_cuts
-            set[i] = ranges[idx,i]
-            div *= n_cuts
-
-        settings[k,:] = set
-
+    settings = set_gen(ds, n_cuts, n_settings)
     accuracy = np.zeros(n_settings)
 
     #timer start
@@ -109,8 +89,8 @@ def worker(rank, ds):
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 ws = comm.Get_size() - 1
-
-ds = Data()
+Filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
+ds = Data(Filename)
 
 if rank == 0:
     mpi_size = comm.Get_size()

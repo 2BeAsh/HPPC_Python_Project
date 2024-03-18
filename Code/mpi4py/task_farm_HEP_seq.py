@@ -3,7 +3,7 @@ sys.path.append("/home/jovyan/erda_mount/__dag_config__/python3")
 # from mpi4py import MPI
 import numpy as np
 import time
-from overall import Data, task_function
+from overall import Data, task_function, set_gen
 
 n_cuts = 3
 n_settings = n_cuts ** 8
@@ -11,33 +11,10 @@ n_settings = n_cuts ** 8
 def master(mpi_size,ds):
     print(f'I am the master! I have {mpi_size-1} workers')
     print(f'Nsig = {ds.nsig}, Nbkg = {ds.nbckg}, Ntot = {ds.nevents}')
-
-    ranges = np.zeros((n_cuts,8))
+    settings = set_gen(ds, n_cuts, n_settings)
+    
     # loop over different event channels and set up cuts
 
-    # for i in range(8):
-    print(ranges.shape)
-    print(ds.means_sig.shape)
-    print(ds.means_bckg.shape)
-    for j in range(n_cuts):
-        ranges[j,:] = ds.means_sig[:] + j * (ds.means_bckg[:] - ds.means_sig[:]) / n_cuts
-    # for i in range(8):
-    #     for j in range(n_cuts):
-    #         ranges[j,i] = ds.means_sig[i] + j * (ds.means_bckg[i] - ds.means_sig[i]) / n_cuts
-    # # vectorize above loops
-            
-    # generate list of all permutation of the cuts for each channel
-    settings = np.zeros((n_settings,8))
-
-    for k in range(n_settings):
-        div = 1
-        set = np.zeros(8)
-        for i in range(8):
-            idx = (k // div) % n_cuts
-            set[i] = ranges[idx,i]
-            div *= n_cuts
-
-        settings[k,:] = set
 
     accuracy = np.zeros(n_settings)
 
@@ -73,7 +50,8 @@ def worker(rank,ds):
 # rank = comm.Get_rank()
 rank = 0
 data_time_start = time.time()
-ds = Data()
+Filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
+ds = Data(Filename)
 data_time_stop = time.time()
 print(f'data loading time: {data_time_stop - data_time_start:.2f} seconds')
 

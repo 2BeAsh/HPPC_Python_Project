@@ -14,7 +14,6 @@ if __name__ == "__main__":
     print("Result: ", y_np)
     print("Time: ", time() - time_np)
 
-
     # DASK
     time_i = time()
     cluster = LocalCluster()

@@ -6,4 +6,4 @@
 
 mpirun apptainer exec \
  ~/modi_images/ucphhpc/hpc-notebook:latest \
- ~/modi_mount/new_env/bin/python dask_test.py
+ ~/modi_mount/tf/bin/python dask_test.py

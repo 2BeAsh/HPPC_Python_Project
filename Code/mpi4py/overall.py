@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 
 class Data:
-    def __init__(self,Filename):
+    def __init__(self,Filename='mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'):
         self.name = ["averageInteractionsPerCrossing", "p_Rhad","p_Rhad1",
                      "p_TRTTrackOccupancy", "p_topoetcone40", "p_eTileGap3Cluster",
                      "p_phiModCalo", "p_etaModCalo"]
-        file = pd.read_csv(Filename, skiprows = 1)
+        file = pd.read_csv(Filename, skiprows = 1) # because pandas is faster than numpy
         file = file.to_numpy()
         # file =  np.loadtxt(filename,delimiter=',',skiprows=1)
 
@@ -50,11 +50,15 @@ def task_function(setting, ds):
     return accuracy
 
 def set_gen(ds, n_cuts, n_settings):
-    ranges = np.zeros((n_cuts,8))
-    for j in range(n_cuts):
-            ranges[j,:] = ds.means_sig[:] + j * (ds.means_bckg[:] - ds.means_sig[:]) / n_cuts
+    ranges = ds.means_sig + (np.arange(n_cuts) * (ds.means_bckg[:,np.newaxis] - 
+                                                  ds.means_sig[:,np.newaxis]) / n_cuts).T
+
+    # ranges = np.zeros((n_cuts,8))
+    # for j in range(n_cuts):
+    #         ranges[j,:] = ds.means_sig[:] + j * (ds.means_bckg[:] - ds.means_sig[:]) / n_cuts
 
     # generate list of all permutation of the cuts for each channel
+
     settings = np.zeros((n_settings,8))
 
     for k in range(n_settings):

@@ -22,7 +22,7 @@ def master(mpi_size,ds):
     start_time = time.time()
 
     for i in range(n_settings):
-        accuracy[i] = task_function(settings[i],ds)
+        accuracy[i] = task_function(settings[i,:],ds)
     
     #timer stop
     stop_time = time.time()

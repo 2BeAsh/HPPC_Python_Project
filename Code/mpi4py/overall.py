@@ -36,8 +36,11 @@ class Data:
         return self.data
 
 def task_function(setting, ds):
-    pred = np.ones(ds.nevents, dtype=bool)
-    for i in range(8):
-        pred = pred & (ds.data[:,i] < setting[i]) # what does this inequality mean?
+    #pred = np.ones(ds.nevents, dtype=bool)
+    data_less_than_setting = ds.data < setting[np.newaxis, :]
+    pred = np.all(data_less_than_setting, axis=1)
+    
+    #for i in range(8):
+    #    pred = pred & (ds.data[:, i] < setting[i]) # what does this inequality mean?
     accuracy = np.sum(pred == ds.signal) / ds.nevents
     return accuracy

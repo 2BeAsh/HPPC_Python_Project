@@ -7,19 +7,21 @@ from mpi4py import MPI
 import numpy as np
 import time
 
+data_path = "./data/"
+
 n_cuts = 3
 n_settings = n_cuts ** 8
 
 
 class Data:
     def __init__(self):
-        filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
+        filename = data_path + 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
         self.name = ["averageInteractionsPerCrossing", "p_Rhad","p_Rhad1",
                      "p_TRTTrackOccupancy", "p_topoetcone40", "p_eTileGap3Cluster",
                      "p_phiModCalo", "p_etaModCalo"]
 
-        self.Nvtxreco = np.loadtxt(filename,delimiter=',',skiprows=1,usecols=2)
-        self.p_nTracks = np.loadtxt(filename,delimiter=',',skiprows=1,usecols=3)
+        self.Nvtxreco = np.loadtxt(filename, delimiter=',',skiprows=1,usecols=2)
+        self.p_nTracks = np.loadtxt(filename, delimiter=',',skiprows=1,usecols=3)
         data_index = [1, 4, 5, 6, 7, 8, 9, 10, 11]
         self.data = np.loadtxt(filename,delimiter=',',skiprows=1,usecols=data_index)
         self.signal = self.data[:,-1] == 2
@@ -42,6 +44,7 @@ class Data:
     def get(self):
         return self.data
 
+
 def task_function(setting, ds):
     pred = np.ones(ds.nevents, dtype=bool)
     for i in range(8):
@@ -49,11 +52,12 @@ def task_function(setting, ds):
     accuracy = np.sum(pred == ds.signal) / ds.nevents
     return accuracy
 
+
 def master(ws,ds):
     print(f'I am the master! I have {ws} workers')
     print(f'Nsig = {ds.nsig}, Nbkg = {ds.nbckg}, Ntot = {ds.nevents}')
 
-    ranges = np.zeros((n_cuts,8))
+    ranges = np.zeros((n_cuts, 8))
     # loop over different event channels and set up cuts
 
     # for i in range(8):
@@ -108,7 +112,7 @@ def master(ws,ds):
         t = comm.recv(source=MPI.ANY_SOURCE,status=state, tag = 11)
         w = state.Get_source()  
         count_ws[w] += 1
-        accuracy[task_ws[w]] = t      
+        accuracy[task_ws[w]] = t
 
         comm.send(0, dest=w, tag=10)
         avail_ws.append(w)

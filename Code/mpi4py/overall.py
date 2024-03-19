@@ -53,22 +53,11 @@ def set_gen(ds, n_cuts, n_settings):
     ranges = ds.means_sig + (np.arange(n_cuts) * (ds.means_bckg[:,np.newaxis] - 
                                                   ds.means_sig[:,np.newaxis]) / n_cuts).T
 
-    # ranges = np.zeros((n_cuts,8))
-    # for j in range(n_cuts):
-    #         ranges[j,:] = ds.means_sig[:] + j * (ds.means_bckg[:] - ds.means_sig[:]) / n_cuts
-
-    # generate list of all permutation of the cuts for each channel
-
-    settings = np.zeros((n_settings,8))
-
-    for k in range(n_settings):
-        div = 1
-        set = np.zeros(8)
-        for i in range(8):
-            idx = (k // div) % n_cuts
-            set[i] = ranges[idx,i]
-            div *= n_cuts
-
-        settings[k,:] = set
+    settings = np.zeros((n_settings,8)) # 8 is inner loop, that is good right?
+    div = n_cuts**np.arange(8)
+    k = np.arange(n_settings)
+    idx = (k[:,np.newaxis]) // div % n_cuts
+    i = np.arange(8)
+    settings = ranges[idx,i]
 
     return settings

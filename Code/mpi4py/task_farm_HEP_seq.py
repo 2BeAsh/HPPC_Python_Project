@@ -49,11 +49,8 @@ def worker(rank,ds):
 # comm = MPI.COMM_WORLD
 # rank = comm.Get_rank()
 rank = 0
-data_time_start = time.time()
 Filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
 ds = Data(Filename)
-data_time_stop = time.time()
-print(f'data loading time: {data_time_stop - data_time_start:.2f} seconds')
 
 if rank == 0:
     # comm.send(data, dest=1, tag=11)

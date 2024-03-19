@@ -39,15 +39,20 @@ class Data:
     def get(self):
         return self.data
 
-def task_function(setting, ds):
-    #pred = np.ones(ds.nevents, dtype=bool)
-    data_less_than_setting = ds.data < setting[np.newaxis, :]
-    pred = np.all(data_less_than_setting, axis=1)
-    
-    #for i in range(8):
-    #    pred = pred & (ds.data[:, i] < setting[i]) # what does this inequality mean?
-    accuracy = np.sum(pred == ds.signal) / ds.nevents
-    return accuracy
+def task_function(setting, ds, bunch_size = 1):
+    if bunch_size = 1:
+        data_less_than_setting = ds.data < setting[np.newaxis, :]
+        pred = np.all(data_less_than_setting, axis=1)
+        accuracy = np.sum(pred == ds.signal) / ds.nevents
+        return accuracy
+    else:
+        accuracy = np.zeros(bunch_size)
+        for i in range(bunch_size):
+            set = setting[i,:]
+            data_less_than_setting = ds.data < set[np.newaxis, :]
+            pred = np.all(data_less_than_setting, axis=1)
+            accuracy[i] = np.sum(pred == ds.signal) / ds.nevents
+        return accuracy
 
 def set_gen(ds, n_cuts, n_settings):
     ranges = ds.means_sig + (np.arange(n_cuts) * (ds.means_bckg[:,np.newaxis] - 

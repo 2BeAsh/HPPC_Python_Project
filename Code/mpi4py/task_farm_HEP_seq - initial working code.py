@@ -1,6 +1,6 @@
 import sys
 sys.path.append("/home/jovyan/erda_mount/__dag_config__/python3")
-from mpi4py import MPI
+# from mpi4py import MPI
 import numpy as np
 import time
 
@@ -108,15 +108,19 @@ def worker(rank,ds):
 
 
 # main:
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+
+rank = 0
+
 
 ds = Data()
 
 if rank == 0:
     # comm.send(data, dest=1, tag=11)
     print(f'i am rank {rank}')
-    mpi_size = comm.Get_size()
+    # mpi_size = comm.Get_size()
+    mpi_size = 1
     master(mpi_size,ds)
 else:
     # data = comm.recv(source=0, tag=11)

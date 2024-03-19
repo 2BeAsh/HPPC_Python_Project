@@ -41,6 +41,8 @@ class Data:
 
 def task_function(setting, ds, bunch_size = 1):
     if bunch_size == 1:
+        if setting.ndim == 2:
+            setting = setting[0,:]
         data_less_than_setting = ds.data < setting[np.newaxis, :]
         pred = np.all(data_less_than_setting, axis=1)
         accuracy = np.sum(pred == ds.signal) / ds.nevents

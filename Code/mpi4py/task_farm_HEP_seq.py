@@ -36,7 +36,7 @@ def master(mpi_size,ds):
         print(ds.name[i] + f': {ds.flip[i]*best_accuracy_setting[i]:.6f}')
 
     print(f'Number of settings: {n_settings}')
-    print(f'Elapsed time: {stop_time-start_time:.2f} seconds')
+    print(f'Elapsed time: {stop_time-start_time} seconds')
 
 
 def worker(rank,ds):

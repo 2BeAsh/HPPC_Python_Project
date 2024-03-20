@@ -5,7 +5,6 @@ import dask.array as da
 from dask.distributed import Client
 from dask_jobqueue import PBSCluster
 
-
 size = 10_000
 # NUMPY
 time_np = time()

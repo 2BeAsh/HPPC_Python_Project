@@ -2,7 +2,7 @@ import numpy as np
 from time import time
 # Dask imports
 import dask.array as da
-from dask.distributed import Client, LocalCluster
+from dask.distributed import Client
 from dask_mpi import initialize
 
 

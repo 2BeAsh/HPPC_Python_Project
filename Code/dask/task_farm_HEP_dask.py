@@ -10,11 +10,11 @@ n_cuts = 3
 n_settings = n_cuts ** 8
 
 class Data:
-    def __init__(self,Filename='mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'):
+    def __init__(self, filename):
         self.name = ["averageInteractionsPerCrossing", "p_Rhad","p_Rhad1",
                      "p_TRTTrackOccupancy", "p_topoetcone40", "p_eTileGap3Cluster",
                      "p_phiModCalo", "p_etaModCalo"]
-        file = pd.read_csv(Filename, skiprows = 1) # because pandas is faster than numpy
+        file = pd.read_csv(filename, skiprows = 1) # because pandas is faster than numpy
         file = file.to_numpy()
 
         self.Nvtxreco = file[:,2]
@@ -37,17 +37,16 @@ class Data:
         self.nbckg = self.nevents - self.nsig
             
 
-def task_function(setting):
-    data_less_than_setting = ds.data < setting[np.newaxis, :]
+def task_function(setting, data, signal, nevents):
+    data_less_than_setting = data < setting[np.newaxis, :]
     pred = np.all(data_less_than_setting, axis=1)
-    accuracy = np.sum(pred == ds.signal) / ds.nevents
+    accuracy = np.sum(pred == signal) / nevents
     return accuracy
 
 
-def set_gen(ds, n_cuts, n_settings):
-    ranges = ds.means_sig + (np.arange(n_cuts) * (ds.means_bckg[:,np.newaxis] - 
-                                                  ds.means_sig[:,np.newaxis]) / n_cuts).T
-
+def set_gen(means_sig, means_bckg, n_cuts, n_settings):
+    ranges = means_sig + (np.arange(n_cuts) * (means_bckg[:,np.newaxis] - 
+                                                  means_sig[:,np.newaxis]) / n_cuts).T
     settings = np.zeros((n_settings, 8)) # 8 is inner loop, that is good right?
     div = n_cuts ** np.arange(8)
     k = np.arange(n_settings)
@@ -57,18 +56,25 @@ def set_gen(ds, n_cuts, n_settings):
 
     return settings
 
+def scatter_data(ds, client):
+    data_future = client.scatter(ds.data)
+    signal_future = client.scatter(ds.signal)
+    nevents_future = client.scatter(ds.nevents)
+    return data_future, signal_future, nevents_future
 
-def master():
+
+def master(ds, n_cuts, n_settings, client):
     print(f'Dask implentation')
-    settings = set_gen(ds, n_cuts, n_settings)
-    # settings = np.from_array(settings, chunks=chunk_shape)      
+    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)
     
     #timer start
     start_time = time.time()
     
-    # Can I scatter my data before submitting?    
-    accuracy = [client.submit(task_function, settings[i, :]) for i in range(n_settings)]
-    accuracy = accuracy.result()
+    # Scatter data to workers
+    data_future, signal_future, nevents_future = scatter_data(ds, client)
+    
+    accuracy_futures = [client.submit(task_function, settings[i, :], data_future, signal_future, nevents_future) for i in range(n_settings)]
+    accuracy = client.gather(accuracy_futures)
     
     idx_max_accuracy = np.argmax(accuracy)
     best_accuracy_score = accuracy[idx_max_accuracy]
@@ -87,10 +93,10 @@ def master():
 
 # now running the program
 if __name__ == '__main__':
-    Filename = 'data/mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
-    ds = Data(Filename)
+    filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
+    ds = Data(filename)
     cluster = LocalCluster()
     client = Client(cluster)
     chunk_shape = (1000, 8)
-    master()
+    master(ds, n_cuts, n_settings, client)
     print(cluster.scheduler)

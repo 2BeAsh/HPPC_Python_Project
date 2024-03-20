@@ -1,29 +1,22 @@
 import numpy as np
-from time import time
 # Dask imports
 import dask.array as da
 from dask.distributed import Client, LocalCluster
-from dask_mpi import initialize
 
 
-size = 10_00
-# NUMPY
-time_np = time()
-x_np = np.random.random((size, size))
-y_np = np.exp(x_np).sum()
-print("-- NUMPY --")
-print("Result: ", y_np)
-print("Time: ", time() - time_np)
+if __name__ == "__main__":
+    # DASK
+    cluster = LocalCluster()  # "Each node has 36 cores and 100 gb of memory"
+    client = Client(cluster)
+    print(client.dashboard_link)  # Giver et link hvor man kan se hvad der sker
 
-# DASK
-time_i = time()
-initialize()
-client = Client()
-x = da.random.random((size, size), chunks=(1000, 1000))
-y = da.exp(x).sum().compute()
+    size = 10_000
 
-print("-- DASK --")
-print("Result: ", y)
-print("Time: ", time() - time_i)
-# Print scheduler info
-#print(cluster.scheduler)
+    x = da.random.random((size, size), chunks=(1000, 1000))
+    y = da.exp(x).sum()
+    #y.visualize()  # Requires graphics engine. Might need to run in jupyter
+    y = y.compute()
+
+    print("-- DASK --")
+    print("Result: ", y)
+    print("Scheduler info:\t", cluster.scheduler) # Print scheduler info

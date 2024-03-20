@@ -16,13 +16,17 @@ if __name__ == "__main__":
 
     # DASK
     time_i = time()
-    cluster = LocalCluster()
+    
+    cluster = LocalCluster()  # "Each node has 36 cores and 100 gb of memory"
     client = Client(cluster)
     x = da.random.random((size, size), chunks=(1000, 1000))
-    y = da.exp(x).sum().compute()
+    y = da.exp(x).sum()
+    #y.visualize()  # Requires graphics engine. Might need to run in jupyter
+    y = y.compute()
 
     print("-- DASK --")
+    print(client.dashboard_link)  # Giver et link hvor man kan se hvad der sker
     print("Result: ", y)
     print("Time: ", time() - time_i)
     # Print scheduler info
-    print(cluster.scheduler)
+    print("Scheduler info:\t", cluster.scheduler)

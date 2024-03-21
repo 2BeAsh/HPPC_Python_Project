@@ -17,8 +17,6 @@ class Data:
         file = pd.read_csv(filename, skiprows = 1) # because pandas is faster than numpy
         file = file.to_numpy()
 
-        self.Nvtxreco = file[:,2]
-        self.p_nTracks = file[:,3]
         data_index = [1, 4, 5, 6, 7, 8, 9, 10, 11]
         self.data = file[:,data_index]
         self.signal = self.data[:,-1] == 2
@@ -33,8 +31,6 @@ class Data:
         self.means_sig = self.means_sig * self.flip
         self.means_bckg = self.means_bckg * self.flip
         self.nevents = len(self.data)
-        self.nsig = np.sum(self.signal)
-        self.nbckg = self.nevents - self.nsig
             
 
 def task_function(setting, data, signal, nevents):
@@ -53,8 +49,8 @@ def set_gen(means_sig, means_bckg, n_cuts, n_settings):
     idx = (k[:,np.newaxis]) // div % n_cuts
     i = np.arange(8)
     settings = ranges[idx, i]
-
     return settings
+
 
 def scatter_data(ds, client):
     data_future = client.scatter(ds.data)
@@ -64,16 +60,18 @@ def scatter_data(ds, client):
 
 
 def master(ds, n_cuts, n_settings, client):
-    print(f'Dask implentation')
-    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)
-    
     #timer start
     start_time = time.time()
+
+    # Get settings
+    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)
     
     # Scatter data to workers
     data_future, signal_future, nevents_future = scatter_data(ds, client)
     
+    # Get futures
     accuracy_futures = [client.submit(task_function, settings[i, :], data_future, signal_future, nevents_future) for i in range(n_settings)]
+    # Get Future values
     accuracy = client.gather(accuracy_futures)
     
     idx_max_accuracy = np.argmax(accuracy)
@@ -93,7 +91,7 @@ def master(ds, n_cuts, n_settings, client):
 
 # now running the program
 if __name__ == '__main__':
-    filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
+    filename = 'data/mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
     ds = Data(filename)
     cluster = LocalCluster()
     client = Client(cluster)

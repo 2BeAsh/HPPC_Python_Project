@@ -5,7 +5,6 @@ import dask.array as da
 import dask.dataframe as dd
 from dask.distributed import Client, LocalCluster
 import numpy as np
-import pandas as pd
 
 
 class Data:
@@ -91,16 +90,8 @@ def master(filename, n_cuts, n_settings, client):
     ds = Data(filename)
     
     # Compute settings
-    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)
-    print("Got settings")
-    # Scatter data to workers
-    #data_future, signal_future, nevents_future = scatter_data(ds, client)
-    
-    #accuracy_futures = [client.submit(task_function, setting, data_future, signal_future, nevents_future) for setting in settings]
-    #accuracy_futures = [client.submit(task_function, setting, ds.data, ds.signal, ds.nevents) for setting in settings]
-    #accuracy = client.gather(accuracy_futures)
+    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)    
     accuracy = da.apply_along_axis(task_function, axis=1, arr=settings, data=ds.data, signal=ds.signal, nevents=ds.nevents)
-    print("Got accuracies")
     
     # Find best accuracy
     idx_max_accuracy = da.argmax(accuracy)

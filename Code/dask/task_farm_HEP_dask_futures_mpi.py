@@ -80,13 +80,16 @@ def master(ds, n_cuts, n_settings, client):
     # #timer stop
     stop_time = time.time()
 
-    print(f'Best accuracy optained: {best_accuracy_score:.6f}')
-    print('Final cuts:')
-    for i in range(8):
-        print(ds.name[i] + f': {ds.flip[i]*best_accuracy_setting[i]:.6f}')
-
-    print(f'Number of settings: {n_settings}')
-    print(f'Elapsed time: {stop_time-start_time} seconds')
+    ws = len(client.scheduler_info()['workers'])
+    with open("futures_" + ws + ".txt", "w") as file:
+        file.write(f'Best accuracy optained: {best_accuracy_score:.6f} \n')
+        file.write('Final cuts:\n')
+        for i in range(8):
+            file.write(ds.name[i] + f': {ds.flip[i]*best_accuracy_setting[i]:.6f}\n')
+    
+        file.write(f'Number of settings: {n_settings}\n')
+        file.write(f'Elapsed time: {stop_time-start_time} seconds\n')
+        file.write(f"Workers: {len(client.scheduler_info()['workers'])}\n")
 
 
 # now running the program

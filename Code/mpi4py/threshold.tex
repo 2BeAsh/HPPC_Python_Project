@@ -1,0 +1,56 @@
+% This file was created with tikzplotlib v0.10.1.
+\begin{tikzpicture}
+
+\definecolor{chocolate2267451}{RGB}{226,74,51}
+\definecolor{dimgray85}{RGB}{85,85,85}
+\definecolor{gainsboro229}{RGB}{229,229,229}
+\definecolor{lightgray204}{RGB}{204,204,204}
+\definecolor{steelblue52138189}{RGB}{52,138,189}
+
+\begin{axis}[
+axis background/.style={fill=gainsboro229},
+axis line style={white},
+height=\plotheight,
+legend cell align={left},
+legend style={
+  fill opacity=0.8,
+  draw opacity=1,
+  text opacity=1,
+  at={(0.03,0.97)},
+  anchor=north west,
+  draw=lightgray204,
+  fill=gainsboro229
+},
+tick align=outside,
+tick pos=left,
+width=\plotwidth,
+x grid style={white},
+xlabel=\textcolor{dimgray85}{Number of workers},
+xmajorgrids,
+xmin=-5.3, xmax=133.3,
+xtick style={color=dimgray85},
+y grid style={white},
+ylabel=\textcolor{dimgray85}{Estimated threshold (from fit)},
+ymajorgrids,
+ymin=-1.28697792698479, ymax=204.121649442799,
+ytick style={color=dimgray85}
+]
+\addplot [semithick, chocolate2267451, mark=*, mark size=3, mark options={solid}, only marks, forget plot]
+table {%
+1 12.4079351425171
+3 8.04977798461914
+7 19.2980766296387
+15 22.7996597290039
+31 51.1762237548828
+63 110.041053771973
+127 191.05534362793
+};
+\addplot [semithick, steelblue52138189]
+table {%
+1 8.59807300567627
+127 194.784896850586
+};
+\addlegendentry{Linear fit, slope=1.48}
+\end{axis}
+
+\end{tikzpicture}

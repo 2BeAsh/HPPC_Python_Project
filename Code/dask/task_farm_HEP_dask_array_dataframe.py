@@ -100,7 +100,7 @@ def master(filename, n_cuts, n_settings, client):
     
     # Timer stop
     stop_time = time.time()
-
+    
     print(f'Best accuracy optained: {best_accuracy_score:.6f}')
     print('Final cuts:')
     for i in range(8):

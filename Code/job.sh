@@ -7,4 +7,4 @@
 
 mpiexec apptainer exec \
    ~/modi_images/ucphhpc/hpc-notebook:latest \
-   ~/modi_mount/tf/bin/python task_farm_HEP_dask_mpi.py
+   ~/modi_mount/tf/bin/python task_farm_HEP_dask_futures_mpi.py

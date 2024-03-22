@@ -2,27 +2,27 @@ import numpy as np
 import pandas as pd
 import dask.array as da
 import dask.dataframe as dd
-from dask.distributed import Client, LocalCluster
+from dask.distributed import LocalCluster
 import time 
 import sys
 # sys.path.append("/home/jovyan/erda_mount/__dag_config__/python3")
 
-
 class Data:
-    def __init__(self, Filename='data/mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'):
+    def __init__(self, Filename='mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'):
         self.name = ["averageInteractionsPerCrossing", "p_Rhad","p_Rhad1",
                      "p_TRTTrackOccupancy", "p_topoetcone40", "p_eTileGap3Cluster",
                      "p_phiModCalo", "p_etaModCalo"]
-        df = dd.read_csv(Filename) 
-        # df = df.to_dask_array()
-        self.Nvtxreco = df["NvtxReco"]
-        self.p_nTracks = df["p_nTracks"]
+        file = dd.read_csv(Filename, skiprows=1)  # using Dask DataFrame to read the file
+        file = file.to_dask_array(lengths=True)
+
+        self.Nvtxreco = file[:, 2]
+        self.p_nTracks = file[:, 3]
         data_index = [1, 4, 5, 6, 7, 8, 9, 10, 11]
-        self.data = df.iloc[:, data_index]
-        self.signal = self.data.iloc[:, -1] == 2        
-        self.data = self.data.iloc[:, :-1]
-        self.means_sig = self.data.loc[self.signal].mean(axis=0)
-        self.means_bckg = self.data.loc[~self.signal].mean(axis=0)
+        self.data = file[:, data_index]
+        self.signal = self.data[:, -1] == 2
+        self.data = self.data[:, :-1]
+        self.means_sig = da.mean(self.data[self.signal], axis=0)
+        self.means_bckg = da.mean(self.data[~self.signal], axis=0)
         
         # Old 
         # file = file.to_numpy()        
@@ -35,27 +35,19 @@ class Data:
         # self.means_sig = np.mean(self.data[self.signal],axis=0)
         # self.means_bckg = np.mean(self.data[~self.signal],axis=0)
 
+
         self.flip = da.ones(len(self.means_sig))
         mask = self.means_bckg < self.means_sig
-        mask = mask.compute()
         self.flip[mask] = -1
-        print(self.data.head())
-        self.data = self.data.mul(self.flip, axis=1)
-        print(self.data.head())
-
-        print(self.flip.compute())
-        print(self.means_sig.T.compute())
-        #self.means_sig = self.means_sig * self.flip 
-        # self.means_sig = self.means_sig.compute()
-        # self.means_sig["1"]
-        self.means_sig = self.means_sig.mul(self.flip)
-        print(self.means_sig.compute())
-
+        self.data *= self.flip
+        self.means_sig = self.means_sig * self.flip
         self.means_bckg = self.means_bckg * self.flip
         self.nevents = len(self.data)
         self.nsig = da.sum(self.signal)
         self.nbckg = self.nevents - self.nsig
 
+
+    
     def get(self):
         return self.data
 
@@ -79,34 +71,31 @@ def task_function(setting, ds, bunch_size = 1):
 
 
 def set_gen(ds, n_cuts, n_settings):
-    ranges = ds.means_sig + (np.arange(n_cuts) * (ds.means_bckg[:,np.newaxis] - 
-                                                  ds.means_sig[:,np.newaxis]) / n_cuts).T
+    ranges = ds.means_sig + (np.arange(n_cuts) * (ds.means_bckg[:, np.newaxis] - 
+                                                  ds.means_sig[:, np.newaxis]) / n_cuts).T
 
-    settings = np.zeros((n_settings,8)) # 8 is inner loop, that is good right?
+    settings = np.zeros((n_settings, 8)) # 8 is inner loop, that is good right?
     div = n_cuts**np.arange(8)
     k = np.arange(n_settings)
     idx = (k[:,np.newaxis]) // div % n_cuts
     i = np.arange(8)
-    settings = ranges[idx,i]
+    settings = ranges[idx, i]
 
     return settings
 
 
-def master(mpi_size,ds):
-    print(f'I am the master! I have {mpi_size-1} workers')
+def master(ds):
     print(f'Nsig = {ds.nsig}, Nbkg = {ds.nbckg}, Ntot = {ds.nevents}')
     settings = set_gen(ds, n_cuts, n_settings)
     
     # loop over different event channels and set up cuts
-
-
     accuracy = np.zeros(n_settings)
 
     #timer start
     start_time = time.time()
 
     for i in range(n_settings):
-        accuracy[i] = task_function(settings[i,:],ds)
+        accuracy[i] = task_function(settings[i,:], ds)
     
     #timer stop
     stop_time = time.time()
@@ -123,21 +112,15 @@ def master(mpi_size,ds):
     print(f'Elapsed time: {stop_time-start_time} seconds')
 
 
-def worker(rank,ds):
-    print(f'i am worker {rank}')
-
-
 if __name__ == "__main__":
     # Setup Dask client
     cluster = LocalCluster()  # "Each node has 36 cores and 100 gb of memory"
     client = cluster.get_client()
     print(client.dashboard_link)  # Giver et link hvor man kan se hvad der sker
-
     n_cuts = 3
     n_settings = n_cuts ** 8
 
-    Filename = 'data/mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
+    Filename = 'mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
     ds = Data(Filename)
 
-    mpi_size = 1
-    master(mpi_size,ds)
+    master(ds)

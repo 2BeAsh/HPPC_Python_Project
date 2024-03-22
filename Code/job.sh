@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=mpi4py
+#SBATCH --job-name=dask_test
 #SBATCH --partition=modi_HPPC
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --nodes=2
+#SBATCH --ntasks=4
+##SBATCH --exclusive
 
-mpirun apptainer exec \
- ~/modi_images/ucphhpc/hpc-notebook:latest \
- ~/modi_mount/tf/bin/python dask_test.py
+mpiexec apptainer exec \
+   ~/modi_images/ucphhpc/hpc-notebook:latest \
+   ~/modi_mount/tf/bin/python task_farm_HEP_dask_mpi.py

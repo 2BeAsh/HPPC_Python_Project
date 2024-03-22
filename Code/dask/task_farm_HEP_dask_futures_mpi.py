@@ -53,9 +53,9 @@ def set_gen(means_sig, means_bckg, n_cuts, n_settings):
 
 
 def scatter_data(ds, client):
-    data_future = client.scatter(ds.data)
-    signal_future = client.scatter(ds.signal)
-    nevents_future = client.scatter(ds.nevents)
+    data_future = client.scatter(ds.data, broadcast = True)
+    signal_future = client.scatter(ds.signal, broadcast = True)
+    nevents_future = client.scatter(ds.nevents, broadcast = True)
     return data_future, signal_future, nevents_future
 
 
@@ -78,11 +78,13 @@ def master(ds, n_cuts, n_settings, client):
     idx_max_accuracy = np.argmax(accuracy)
     best_accuracy_score = accuracy[idx_max_accuracy]
     best_accuracy_setting = settings[idx_max_accuracy]
+    
     # #timer stop
     stop_time = time.time()
 
     ws = len(client.scheduler_info()['workers'])
-    with open("futures_" + str(ws) + ".txt", "w") as file:
+    with open("dask_futures_" + str(ws) + ".txt", "w") as file:
+        file.write(f'Using dask futures\n') 
         file.write(f'Best accuracy optained: {best_accuracy_score:.6f} \n')
         file.write('Final cuts:\n')
         for i in range(8):

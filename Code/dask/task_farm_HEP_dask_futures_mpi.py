@@ -81,7 +81,7 @@ def master(ds, n_cuts, n_settings, client):
     stop_time = time.time()
 
     ws = len(client.scheduler_info()['workers'])
-    with open("futures_" + ws + ".txt", "w") as file:
+    with open("futures_" + str(ws) + ".txt", "w") as file:
         file.write(f'Best accuracy optained: {best_accuracy_score:.6f} \n')
         file.write('Final cuts:\n')
         for i in range(8):

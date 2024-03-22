@@ -60,12 +60,13 @@ def scatter_data(ds, client):
 
 
 def master(ds, n_cuts, n_settings, client):
-    #timer start
-    start_time = time.time()
 
     # Get settings
     settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)
     
+    #timer start
+    start_time = time.time()
+
     # Scatter data to workers
     data_future, signal_future, nevents_future = scatter_data(ds, client)
     

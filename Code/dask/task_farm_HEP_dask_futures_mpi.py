@@ -73,6 +73,9 @@ def master(ds, n_cuts, n_settings, client):
     # Get futures
     accuracy_futures = [client.submit(task_function, settings[i, :], data_future, signal_future, nevents_future) for i in range(n_settings)]
     # Get Future values
+    # accuracy = accuracy_futures.rechunk()
+    # accuracy = client.gather(accuracy)
+
     accuracy = client.gather(accuracy_futures)
     
     idx_max_accuracy = np.argmax(accuracy)

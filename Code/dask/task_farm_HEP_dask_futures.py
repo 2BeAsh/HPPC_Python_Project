@@ -6,8 +6,6 @@ from dask.distributed import Client, LocalCluster
 import numpy as np
 import pandas as pd
 
-n_cuts = 3
-n_settings = n_cuts ** 8
 
 class Data:
     def __init__(self, filename):
@@ -72,6 +70,8 @@ def master(ds, n_cuts, n_settings, client):
     # Get futures
     accuracy_futures = [client.submit(task_function, settings[i, :], data_future, signal_future, nevents_future) for i in range(n_settings)]
     # Get Future values
+    # accuracy_futures.visualize(filename="futures_test.png")
+    print("The number of futures is: ", len(accuracy_futures))
     accuracy = client.gather(accuracy_futures)
     
     idx_max_accuracy = np.argmax(accuracy)
@@ -96,5 +96,7 @@ if __name__ == '__main__':
     cluster = LocalCluster()
     client = Client(cluster)
     chunk_shape = (1000, 8)
+    n_cuts = 3
+    n_settings = n_cuts ** 8
     master(ds, n_cuts, n_settings, client)
     print(cluster.scheduler)

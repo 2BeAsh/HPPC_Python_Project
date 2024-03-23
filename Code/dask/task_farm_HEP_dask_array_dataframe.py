@@ -5,14 +5,15 @@ import dask.array as da
 import dask.dataframe as dd
 from dask.distributed import Client, LocalCluster
 import numpy as np
-
+from dask_mpi import initialize
 
 class Data:
     def __init__(self, filename):
         self.name = ["averageInteractionsPerCrossing", "p_Rhad","p_Rhad1",
                      "p_TRTTrackOccupancy", "p_topoetcone40", "p_eTileGap3Cluster",
                      "p_phiModCalo", "p_etaModCalo"]
-        df = dd.read_csv(filename, assume_missing=True)  # assume_missing=True for better performance. Should not change results
+        blocksize = 4.2e6  #  Blocksize=4.2e6=4.2MB. Data er 22.041MB
+        df = dd.read_csv(filename, assume_missing=True, blocksize=blocksize)  # assume_missing=True for better performance. Should not change results.
 
         # Not all columns are relevant
         data_index = [1, 4, 5, 6, 7, 8, 9, 10, 11]
@@ -51,7 +52,7 @@ def task_function(setting, data, signal, nevents):
 
 def set_gen(means_sig, means_bckg, n_cuts, n_settings):
     # Convert to dask array
-    means_sig_array = da.from_array(means_sig)
+    means_sig_array = da.from_array(means_sig)  # 8 elements, probably not worth using chunks
     means_bckg_array = da.from_array(means_bckg)
     
     # Compute ranges
@@ -62,7 +63,7 @@ def set_gen(means_sig, means_bckg, n_cuts, n_settings):
     flat_ranges = da.ravel(ranges)
     
     # Generate indices
-    div = n_cuts ** da.arange(8)
+    div = n_cuts ** da.arange(8, chunks=1)
     k = da.arange(n_settings)
     idx = (k[:, np.newaxis]) // div % n_cuts
     
@@ -70,34 +71,29 @@ def set_gen(means_sig, means_bckg, n_cuts, n_settings):
     flat_idx = da.ravel(idx)
     
     # Use flattened idx on flattened ranges and reshape back
-    settings = flat_ranges[flat_idx].reshape((n_settings, 8))
+    number_of_chunks = 500
+    settings = flat_ranges[flat_idx].reshape((n_settings, 8)).rechunk(number_of_chunks, 8)
     
     return settings
 
 
-def scatter_data(ds, client):
-    data_future = client.scatter(ds.data)
-    signal_future = client.scatter(ds.signal)
-    nevents_future = client.scatter(ds.nevents)
-    return data_future, signal_future, nevents_future
+def master(filename, n_cuts, n_settings):
+    # Read data
+    ds = Data(filename)
 
+    # Compute settings
+    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)        
 
-def master(filename, n_cuts, n_settings, client):
     # Timer start
     start_time = time.time()
 
-    # Read data
-    ds = Data(filename)
-    
-    # Compute settings
-    settings = set_gen(ds.means_sig, ds.means_bckg, n_cuts, n_settings)    
     accuracy = da.apply_along_axis(task_function, axis=1, arr=settings, data=ds.data, signal=ds.signal, nevents=ds.nevents)
     
     # Find best accuracy
     idx_max_accuracy = da.argmax(accuracy)
     best_accuracy_score = accuracy[idx_max_accuracy].compute()
     best_accuracy_setting = settings[idx_max_accuracy].compute()
-    
+        
     # Timer stop
     stop_time = time.time()
     
@@ -113,10 +109,11 @@ def master(filename, n_cuts, n_settings, client):
 # Run the program
 if __name__ == '__main__':
     filename = 'data/mc_ggH_16_13TeV_Zee_EGAM1_calocells_16249871.csv'
-    cluster = LocalCluster()
-    client = Client(cluster)
+    #cluster = LocalCluster()
+    initialize()
+    client = Client()
     #chunk_shape = (1000, 8)
-    n_cuts = 3
+    n_cuts = 2
     n_settings = n_cuts ** 8
-    master(filename, n_cuts, n_settings, client)
-    print(cluster.scheduler)
+    master(filename, n_cuts, n_settings)
+    # print(cluster.scheduler)

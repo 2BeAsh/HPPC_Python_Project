@@ -79,9 +79,10 @@ def master():
     accuracy = da.apply_along_axis(task_function, axis = 1, arr = settings)
     
     # Visualize
-    best_accuracy_score_dask = da.max(accuracy)
-    best_accuracy_score_dask.dask.visualize(filename="dask_array_graph_high_level.png")
-    best_accuracy_score_dask.visualize(filename="dask_array_graph_low_level.png")
+    best_accuracy_score_dask = da.max(accuracy)  # 
+    best_accuracy_score_dask.dask.visualize(filename="Code/dask/dask_array_graph_high_level.png", color="order")
+    best_accuracy_score_dask.visualize(filename="Code/dask/dask_array_graph_low_level_optimized.png", optimize_graph=True, color="order")
+    best_accuracy_score_dask.visualize(filename="Code/dask/dask_array_graph_low_level.png", color="order")
     # Compute values
     best_accuracy_score = da.max(accuracy).compute()
     best_accuracy_setting = settings[da.argmax(accuracy)].compute()
